@@ -34,6 +34,17 @@ app.use(session({
 app.use(express.json());
 app.use(cors(corsOptions));
 
+function regenerateSession(req, res, next, user) {
+  req.session.regenerate(function (err) {
+    if (err) next(err);
+    req.session.user = user;
+    req.session.save(function (err) {
+      if (err) return next(err);
+      res.json(user);
+    });
+  });
+}
+
 app.get('/', (req, res) => {
   res.send('success');
 })
@@ -57,14 +68,7 @@ app.post('/signin', (req, res, next) => {
         return db.select('*').from('users')
           .where('email', '=', email)
           .then(user => {
-            req.session.regenerate(function (err) {
-              if (err) next(err);
-              req.session.user = user[0];
-              req.session.save(function (err) {
-                if (err) return next(err);
-                res.json(user[0]);
-              })
-            })
+            regenerateSession(req, res, next, user[0]);
           })
           .catch(err => res.status(400).json('Unable to get user...'));
       } else {
@@ -95,14 +99,7 @@ app.post('/register', (req, res) => {
           joined: new Date()
         })
         .then(user => {
-          req.session.regenerate(function (err) {
-            if (err) next(err);
-            req.session.user = user[0];
-            req.session.save(function (err) {
-              if (err) return next(err);
-              res.json(user[0]);
-            })
-          })
+          regenerateSession(req, res, next, user[0]);
         })
     })
     .then(trx.commit)
@@ -130,7 +127,10 @@ app.put('/image', (req, res) => {
   db('users').where('id', '=', id)
     .increment('entries', 1)
     .returning('entries')
-    .then(data => res.json(data[0].entries))
+    .then(data => {
+      req.session.user.entries = data[0].entries;
+      res.json(data[0].entries);
+    })
     .catch(err => res.status(400).json('Unable to get entries'))
 })
 
