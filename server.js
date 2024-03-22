@@ -49,6 +49,7 @@ app.post('/signin', signin.handleSignIn(db, bcrypt, regenerateSession));
 app.post('/register', register.handleRegister(db, bcrypt, regenerateSession));
 app.get('/profile/:id', profile.handleProfileGet(db));
 app.put('/image', image.handleImage(db));
+app.post('/imageurl', image.handleApiCall);
 app.get('/signout', signout.handleSignout);
 
 app.listen(3000, () => {
